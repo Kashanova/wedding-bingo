@@ -18,18 +18,18 @@ body {
 }
 #bingo {
   display:grid;
-  grid-template-columns:repeat(5,1fr);
+  grid-template-columns:repeat(5, minmax(60px, 1fr));
   gap:6px;
-  max-width:500px;
+  max-width:95vw;
   margin:auto;
 }
 .cell {
-  background:white;
-  border:2px solid #ddd;
-  padding:8px;
-  border-radius:10px;
-  min-height:80px;
-  font-size:12px;
+  aspect-ratio: 1/1;
+  display:flex;
+  flex-direction:column;
+  justify-content:center;
+  font-size:11px;
+  padding:5px;
 }
 .cell.marked { background:#4caf50; color:white; }
 .cell.free { background:#2196f3; color:white; }
