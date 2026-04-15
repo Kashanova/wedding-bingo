@@ -227,7 +227,7 @@ function checkWin(){
 
       // highlight line
       line.forEach(([i,j])=>{
-        document.getElementById("bingo").children[i*5+j].style.border="3px solid gold";
+        document.getElementById("bingo").children[i*5+j].style.border="5px solid gold";
       });
 
       return;
@@ -275,10 +275,30 @@ function confetti(){
     div.style.transition="transform 2s linear";
     document.body.appendChild(div);
 
+    setTimeout(()=>{
+      div.style.transform="translateY(100vh)";
+    },10);
+
+    setTimeout(()=>div.remove(),2000);
+  }
+}
+  /* function confetti(){
+  for(let i=0;i<100;i++){
+    let div=document.createElement("div");
+    div.style.position="fixed";
+    div.style.width="6px";
+    div.style.height="6px";
+    div.style.background="hsl(" + Math.random()*360 + ",100%,50%)";
+    div.style.top="0px";
+    div.style.left=Math.random()*window.innerWidth+"px";
+    div.style.transition="transform 2s linear";
+    document.body.appendChild(div);
+
     setTimeout(()=>{ div.style.transform="translateY(100vh)"; },10);
     setTimeout(()=>div.remove(),2000);
   }
 }
+*/
 
 /* INIT */
 function newCard(){
