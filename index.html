@@ -270,23 +270,51 @@ async function claim(){
 
 /* CONFETTI */
 function confetti(){
-  for(let i=0;i<100;i++){
-    let div=document.createElement("div");
-    div.style.position="fixed";
-    div.style.width="6px";
-    div.style.height="6px";
-    div.style.background="hsl(" + Math.random()*360 + ",100%,50%)";
-    div.style.top="0px";
-    div.style.left=Math.random()*window.innerWidth+"px";
-    div.style.transition="transform 2s linear";
-    document.body.appendChild(div);
+  const particles = [];
+  const duration = 2000;
+  const start = performance.now();
 
-    setTimeout(()=>{
-      div.style.transform="translateY(100vh)";
-    },10);
+  const colors = ["#ff4d4d","#ffd700","#4caf50","#2196f3","#ff69b4","#ff9800"];
 
-    setTimeout(()=>div.remove(),2000);
+  function spawn(){
+    for(let i=0;i<8;i++){
+      const el = document.createElement("div");
+
+      el.style.position = "fixed";
+      el.style.width = "6px";
+      el.style.height = "10px";
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.left = Math.random()*window.innerWidth + "px";
+      el.style.top = "-20px";
+      el.style.opacity = "1";
+      el.style.transition = "transform 2s linear, opacity 2s linear";
+
+      document.body.appendChild(el);
+
+      const fallX = (Math.random()-0.5)*100;
+      const fallY = window.innerHeight + 100;
+
+      setTimeout(()=>{
+        el.style.transform = `translate(${fallX}px, ${fallY}px) rotate(${Math.random()*360}deg)`;
+        el.style.opacity = "0.8";
+      },10);
+
+      setTimeout(()=>el.remove(), 2500);
+
+      particles.push(el);
+    }
   }
+
+  const interval = setInterval(()=>{
+    const now = performance.now();
+
+    if(now - start > duration){
+      clearInterval(interval);
+      return;
+    }
+
+    spawn();
+  }, 120);
 }
   /* function confetti(){
   for(let i=0;i<100;i++){
