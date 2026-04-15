@@ -45,7 +45,8 @@ const PROMPTS = ["Bride laughs loudly","Someone cries","MC makes a joke","Couple
   "Late confident entrance","Leaves quietly","Random cheering"];
 
 let seed, rng, state=[], hasWon=false;
-
+const SALT = "Walima_Maz_Kash_2026";
+  
 function getSeed(){
   return crypto.getRandomValues(new Uint32Array(1))[0];
 }
@@ -111,7 +112,8 @@ function checkWin(){
 }
 
 async function claim(){
-  const code = await hash(seed.toString());
+  //const code = await hash(seed.toString());
+  const code = await hash(seed + SALT);
   const payload = JSON.stringify({seed:seed, code:code});
 
   const qrDiv=document.getElementById("qr");
