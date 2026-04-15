@@ -1,0 +1,53 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC Scanner</title>
+
+<script src="https://unpkg.com/html5-qrcode"></script>
+</head>
+
+<body style="font-family:sans-serif; text-align:center;">
+
+<h2>🎤 MC Scanner</h2>
+
+<div id="reader" style="width:300px; margin:auto;"></div>
+
+<h3 id="result"></h3>
+
+<script>
+const SECRET = "SuperSecretSalt123"; // CHANGE THIS
+
+async function hash(str){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,8);
+}
+
+function startScanner(){
+  const scanner = new Html5Qrcode("reader");
+
+  scanner.start(
+    { facingMode: "environment" },
+    { fps: 10, qrbox: 250 },
+    async (decodedText) => {
+      try{
+        const data = JSON.parse(decodedText);
+        const expected = await hash(data.seed + SECRET);
+
+        if(expected === data.code){
+          document.getElementById("result").innerText = "✅ VALID BINGO";
+        } else {
+          document.getElementById("result").innerText = "❌ INVALID";
+        }
+      } catch(e){
+        document.getElementById("result").innerText = "❌ ERROR";
+      }
+    }
+  );
+}
+
+startScanner();
+</script>
+
+</body>
+</html>
