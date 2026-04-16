@@ -5,6 +5,422 @@
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
 <link href="https://fonts.googleapis.com/css2?family=ABeeZee:ital@0;1&display=swap" rel="stylesheet">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+<title>Wedding Bingo</title>
+
+<style>
+html, body {
+  margin:0;
+  padding:0;
+  overflow-x:hidden;
+  font-family: "ABeeZee", sans-serif;
+}
+  /* ===== CANVAS ===== */
+#canvas {
+  position: relative;
+  width: 1440px;
+  height: 2200px;
+  margin: auto;
+
+  background-image: url("Bingo assets.png");
+  background-size: 100% 100%;
+  background-repeat: no-repeat;
+}
+/*body {
+  font-family: "ABeeZee", sans-serif;
+  text-align:center;
+  background-image: url("Bingo assets.png");
+  background-size: cover;
+  background-position: center;
+  background-attachment: fixed;
+}*/
+#bingo {
+  /*display:grid;
+  grid-template-columns:repeat(5, minmax(60px, 1fr));
+  gap:6px;
+  max-width:95vw;
+  margin:auto;
+  */
+  position: absolute;
+  left: 124px;
+  top: 473px;
+
+  width: 1188px;
+  height: 1188px;
+
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  grid-template-rows: repeat(5, 1fr);
+  gap: 8px; /* tweak to match your design */
+  /*margin:auto;*/
+}
+.cell {
+  /*aspect-ratio: 1/1;*/
+  display:flex;
+  /*flex-direction:column;*/
+  justify-content:center;
+  align-items:center;
+  text-align:center;
+  
+  font-size:14px;
+  padding:6px;
+  border-radius:10px;
+  
+}
+.cell.marked { background:#4caf50; color:white; }
+.cell.free { background:transparent; /* #2196f3 color:white; */}
+
+.nameInput {
+  margin-top:5px;
+  width:85%;
+  font-size:11px;
+  text-align:center;
+  
+  background:#f0f0f0;
+  color:#333;
+
+  border:1px solid #ccc;
+  border-radius:5px;
+  padding:2px;
+}
+/*input {
+  margin-top:4px;
+  width:90%;
+}*/
+
+button {
+  position:absolute;
+  top:1650px;
+  left:50%;
+  transform:translateX(-50%);
+
+  padding:12px 18px;
+  border:none;
+  border-radius:10px;
+  background:black;
+  color:white;
+  /*
+  margin-top:10px;
+  padding:10px;
+  border:none;
+  border-radius:8px;
+  background:black;
+  color:white;*/
+}
+
+#claimBtn { display:none; }
+
+/* ===== QR ===== */
+#qr {
+  position:absolute;
+  top:1750px;
+  left:50%;
+  transform:translateX(-50%);
+}
+
+</style>
+</head>
+
+<body>
+
+<h2>Kashan & Maziha's Wedding Bingo</h2>
+
+<div id="bingo"></div>
+
+<button id="claimBtn" onclick="claim()">Claim your BINGO</button>
+
+<div id="qr"></div>
+
+<audio id="winSound" src="https://www.soundjay.com/human/cheering-01.mp3"></audio>
+
+<script src="https://cdn.jsdelivr.net/npm/qrcode/build/qrcode.min.js"></script>
+
+<script>
+const SALT = "Walima_Maz_Kash_2026";
+
+/* PROMPTS */
+const PROMPTS = [
+  {text:"Someone checks mirror", needsName:true},
+  {text:"Someone laughs uncontrollably", needsName:true},
+  {text:"Someone spills a drink", needsName:true},
+  {text:"Someone dancing confidently", needsName:true},
+  {text:"Someone takes a selfie", needsName:true},
+  {text:"Someone fixes their outfit", needsName:true},
+  {text:"Someone whispers gossip", needsName:true},
+  {text:"Someone leaves early", needsName:true},
+  {text:"Someone arrives late", needsName:true},
+  {text:"Someone asks for WiFi", needsName:true},
+  {text:"Someone gives unsolicited advice", needsName:true},
+  {text:"Someone overdressed", needsName:true},
+  {text:"Someone waves at camera", needsName:true},
+  {text:"Someone laughing alone", needsName:true},
+  {text:"Someone mispronounces a name", needsName:true},
+  {text:"Someone asks for tea", needsName:true},
+  {text:"Someone makes an unexpected joke", needsName:true},
+  {text:"Someone filming everything vertically", needsName:true},
+
+  {text:"Bride laughs loudly"},
+  {text:"Bride looks at groom"},
+  {text:"Groom looks nervous"},
+  {text:"Couple holds hands"},
+  {text:"Bride adjusts dress"},
+  {text:"Groom adjusts suit"},
+  {text:"Speech gets emotional"},
+  {text:"Speech interrupted"},
+  {text:"Long speech"},
+  {text:"MC makes a joke"},
+  {text:"MC repeats himself"},
+  {text:"Name forgotten"},
+  {text:"Someone says MashaAllah"},
+  {text:"Awkward silence moment"},
+  {text:"Inside joke moment between guests"},
+  {text:"Unexpected emotional moment"},
+
+  {text:"Crowd cheers"},
+  {text:"Random cheering burst"},
+  {text:"Camera flashes everywhere"},
+  {text:"Phone rings during speech"},
+  {text:"Guests checking phones"},
+  {text:"Loud laughter wave"},
+  {text:"Music gets louder suddenly"},
+  {text:"Dance circle forms"},
+  {text:"Family hugs"},
+  {text:"Clapping moment"},
+  {text:"Someone says wow"},
+  {text:"Food gets praised"},
+  {text:"Someone takes double plates"},
+  {text:"Dessert taken early"},
+  {text:"Hair being fixed repeatedly"},
+  {text:"Someone asks where the couple is"},
+  {text:"Someone leaves quietly without notice"},
+
+  {text:"Find a table where 3 people wear similar jacket colors", needsName:true},
+  {text:"Find the table with the most coordinated outfits", needsName:true},
+  {text:"Which table has the loudest laughter? Identify table number", needsName:true},
+  {text:"Which table is taking the most photos? Name table number", needsName:true},
+  {text:"Find a table where at least 2 people are on their phones", needsName:true},
+  {text:"Which table looks most confused about what's happening? Table number", needsName:true},
+  {text:"Find the table that arrived the latest", needsName:true},
+  {text:"Which table is eating the fastest? Identify table number", needsName:true},
+  {text:"Find a table with at least one person standing up dancing", needsName:true},
+  {text:"Which table is most quiet right now?", needsName:true},
+  {text:"Find a table where someone is explaining something to others", needsName:true},
+  {text:"Which table is most engaged with the MC? Table number", needsName:true},
+
+  {text:"Someone claps off beat"},
+  {text:"Someone says 'this food is amazing' loudly"},
+  {text:"Someone walks in confidently late"},
+  {text:"Someone spills food instead of drink"},
+  {text:"Someone starts recording mid-conversation"},
+  {text:"Someone recognizes another guest unexpectedly"},
+  {text:"Someone tries to avoid camera"},
+  {text:"Someone gets pulled into dancing unexpectedly"}
+];
+
+let seed, rng, state=[], hasWon=false;
+let winningLine = null;
+
+/* RNG */
+function getSeed(){
+  return crypto.getRandomValues(new Uint32Array(1))[0];
+}
+function mulberry32(a){return function(){let t=a+=0x6D2B79F5;t=Math.imul(t^t>>>15,t|1);t^=t+Math.imul(t^t>>>7,t|61);return((t^t>>>14)>>>0)/4294967296;}}
+
+/* HASH */
+async function hash(str){
+  const buf = await crypto.subtle.digest("SHA-256", new TextEncoder().encode(str));
+  return Array.from(new Uint8Array(buf)).map(b=>b.toString(16).padStart(2,"0")).join("").slice(0,8);
+}
+
+/* GENERATE */
+function generateCard(){
+  const shuffled=[...PROMPTS].sort(()=>rng()-0.5).slice(0,24);
+  let grid=[], idx=0;
+  for(let i=0;i<5;i++){
+    grid[i]=[];
+    for(let j=0;j<5;j++){
+      grid[i][j]=(i===2&&j===2)?"FREE":shuffled[idx++];
+    }
+  }
+  return grid;
+}
+
+/* RENDER */
+function render(grid){
+  const c=document.getElementById("bingo");
+  c.innerHTML="";
+  state=[]; hasWon=false; winningLine=null;
+  document.getElementById("claimBtn").style.display="none";
+
+  grid.forEach((row,i)=>{
+    state[i]=[];
+    row.forEach((item,j)=>{
+      let d=document.createElement("div");
+      d.className="cell";
+
+      if(item==="FREE"){
+        d.innerText="";
+        d.classList.add("free","marked");
+        state[i][j]=true;
+      } else {
+        d.innerHTML = `
+          <div>${item.text}</div>
+          ${item.needsName ? '<input placeholder="Who?">' : ''}
+        `;
+        state[i][j]=false;
+      }
+
+      d.onclick=()=>{
+        if(hasWon || item==="FREE") return;
+        state[i][j]=!state[i][j];
+        d.classList.toggle("marked");
+        checkWin();
+      };
+
+      c.appendChild(d);
+    });
+  });
+}
+
+/* CHECK WIN */
+function checkWin(){
+  const lines=[
+    ...[0,1,2,3,4].map(i=>[0,1,2,3,4].map(j=>[i,j])),
+    ...[0,1,2,3,4].map(j=>[0,1,2,3,4].map(i=>[i,j])),
+    [[0,0],[1,1],[2,2],[3,3],[4,4]],
+    [[0,4],[1,3],[2,2],[3,1],[4,0]]
+  ];
+
+  for(let line of lines){
+    if(line.every(([i,j])=>state[i][j])){
+      hasWon=true;
+      winningLine=line;
+
+      document.getElementById("claimBtn").style.display="block";
+      document.getElementById("winSound").play();
+      confetti();
+
+      // highlight line
+      line.forEach(([i,j])=>{
+        document.getElementById("bingo").children[i*5+j].style.border="5px solid gold";
+      });
+
+      return;
+    }
+  }
+}
+
+/* CLAIM */
+async function claim(){
+  const code = await hash(seed + SALT);
+
+  const details = winningLine.map(([i,j])=>{
+    const cell = document.getElementById("bingo").children[i*5+j];
+    const text = cell.innerText;
+    const input = cell.querySelector("input");
+    return {
+      text,
+      name: input ? input.value : null
+    };
+  });
+
+  const payload = JSON.stringify({
+    seed,
+    code,
+    line: details
+  });
+
+  QRCode.toCanvas(payload, {width:220}, function (err, canvas) {
+    const qrDiv=document.getElementById("qr");
+    qrDiv.innerHTML="";
+    qrDiv.appendChild(canvas);
+  });
+}
+
+/* CONFETTI */
+function confetti(){
+  const particles = [];
+  const duration = 2000;
+  const start = performance.now();
+
+  const colors = ["#ff4d4d","#ffd700","#4caf50","#2196f3","#ff69b4","#ff9800"];
+
+  function spawn(){
+    for(let i=0;i<8;i++){
+      const el = document.createElement("div");
+
+      el.style.position = "fixed";
+      el.style.width = "6px";
+      el.style.height = "10px";
+      el.style.background = colors[Math.floor(Math.random()*colors.length)];
+      el.style.left = Math.random()*window.innerWidth + "px";
+      el.style.top = "-20px";
+      el.style.opacity = "1";
+      el.style.transition = "transform 2s linear, opacity 2s linear";
+
+      document.body.appendChild(el);
+
+      const fallX = (Math.random()-0.5)*100;
+      const fallY = window.innerHeight + 100;
+
+      setTimeout(()=>{
+        el.style.transform = `translate(${fallX}px, ${fallY}px) rotate(${Math.random()*360}deg)`;
+        el.style.opacity = "0.8";
+      },10);
+
+      setTimeout(()=>el.remove(), 2500);
+
+      particles.push(el);
+    }
+  }
+
+  const interval = setInterval(()=>{
+    const now = performance.now();
+
+    if(now - start > duration){
+      clearInterval(interval);
+      return;
+    }
+
+    spawn();
+  }, 120);
+}
+  /* function confetti(){
+  for(let i=0;i<100;i++){
+    let div=document.createElement("div");
+    div.style.position="fixed";
+    div.style.width="6px";
+    div.style.height="6px";
+    div.style.background="hsl(" + Math.random()*360 + ",100%,50%)";
+    div.style.top="0px";
+    div.style.left=Math.random()*window.innerWidth+"px";
+    div.style.transition="transform 2s linear";
+    document.body.appendChild(div);
+
+    setTimeout(()=>{ div.style.transform="translateY(100vh)"; },10);
+    setTimeout(()=>div.remove(),2000);
+  }
+}
+*/
+
+/* INIT */
+function newCard(){
+  seed=getSeed();
+  rng=mulberry32(seed);
+  render(generateCard());
+}
+newCard();
+</script>
+
+</body>
+</html>
+<!DOCTYPE html>
+<html>
+<head>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=ABeeZee:ital@0;1&display=swap" rel="stylesheet">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Wedding Bingo</title>
 
 <style>
