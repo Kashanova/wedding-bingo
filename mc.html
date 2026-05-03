@@ -1,4 +1,214 @@
 <!DOCTYPE html>
+
+<html>
+<head>
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MC Dashboard</title>
+
+<style>
+body { font-family:sans-serif; text-align:center; }
+
+table { margin:auto; border-collapse:collapse; }
+td,th { border:1px solid #ddd; padding:6px 10px; }
+
+button {
+  margin:5px;
+  padding:8px;
+  border:none;
+  border-radius:6px;
+  background:black;
+  color:white;
+}
+
+#toast {
+  position:fixed;
+  bottom:20px;
+  left:50%;
+  transform:translateX(-50%);
+  background:black;
+  color:white;
+  padding:12px 18px;
+  border-radius:10px;
+  display:none;
+}
+
+#winners div {
+  margin:5px;
+  padding:8px;
+  border:1px solid #ccc;
+}
+</style>
+
+</head>
+
+<body>
+
+<h2>MC Dashboard</h2>
+
+<h3>Top Tables</h3>
+<table>
+<thead><tr><th>Table</th><th>Score</th></tr></thead>
+<tbody id="tables"></tbody>
+</table>
+
+<h3>Top Players</h3>
+<table>
+<thead><tr><th>User</th><th>Score</th></tr></thead>
+<tbody id="users"></tbody>
+</table>
+
+<h3>Pending Tiles</h3>
+<div id="pending"></div>
+
+<h3>🎉 Bingo Claims</h3>
+<div id="bingoClaims"></div>
+
+<h3>🏆 Winners</h3>
+<div id="winners"></div>
+
+<div id="toast"></div>
+
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js"></script>
+
+<script>
+var db = window.supabase.createClient("https://aveckjhyvkblrgtcxeoi.supabase.co","sb_publishable_vI2nZXL3ID48sdnFMg6dcQ_fxvVtCyJ");
+
+let usersMap = {};
+let winners = [];
+let seenBingoIds = new Set();
+
+// ===== LOAD USERS =====
+async function loadUsers(){
+  const { data } = await db.from("users").select("*");
+  usersMap = {};
+  data.forEach(u => usersMap[u.id] = u);
+}
+
+// ===== TOAST =====
+function showToast(msg){
+  const t = document.getElementById("toast");
+  t.innerText = msg;
+  t.style.display = "block";
+  setTimeout(()=>t.style.display="none", 4000);
+}
+
+// ===== LOAD =====
+async function load(){
+
+  await loadUsers();
+
+  const { data } = await db.from("bingo_events").select("*");
+
+  // ===== BINGO CLAIMS =====
+  const bingoEvents = data.filter(d=>d.is_bingo);
+
+  document.getElementById("bingoClaims").innerHTML =
+    bingoEvents.map(e=>{
+      const u = usersMap[e.user_id];
+      if(!u) return "";
+
+      // show toast ONLY once
+      if(!seenBingoIds.has(e.id)){
+        showToast(`🎉 BINGO ready: ${u.nickname} (Table ${u.table_id})`);
+        seenBingoIds.add(e.id);
+      }
+
+      return `
+        <div>
+          ${u.nickname} (Table ${u.table_id})
+          <button onclick="setWinner('${u.nickname}')">Add Winner</button>
+        </div>
+      `;
+    }).join("");
+
+  // ===== APPROVED =====
+  const approved = data.filter(d=>d.approved === true);
+
+  // ===== TABLE SCORES =====
+  const tableCounts = {};
+  approved.forEach(e=>{
+    tableCounts[e.table_id] = (tableCounts[e.table_id] || 0) + 1;
+  });
+
+  document.getElementById("tables").innerHTML =
+    Object.entries(tableCounts)
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0,5)
+      .map(([t,c])=>`<tr><td>${t}</td><td>${c}</td></tr>`)
+      .join("");
+
+  // ===== USER SCORES (FIXED) =====
+  const userCounts = {};
+  approved.forEach(e=>{
+    const u = usersMap[e.user_id];
+    const name = u ? u.nickname : "Guest";
+    userCounts[name] = (userCounts[name] || 0) + 1;
+  });
+
+  document.getElementById("users").innerHTML =
+    Object.entries(userCounts)
+      .sort((a,b)=>b[1]-a[1])
+      .slice(0,5)
+      .map(([u,c])=>`<tr><td>${u}</td><td>${c}</td></tr>`)
+      .join("");
+
+  // ===== PENDING =====
+  const pending = data.filter(d=>!d.approved && !d.is_bingo);
+
+  document.getElementById("pending").innerHTML =
+    pending.map(e=>{
+      const u = usersMap[e.user_id];
+      const name = u ? u.nickname : "Guest";
+
+      return `
+        <div>
+          <b>${e.tile}</b> — ${e.who || "-"} 
+          (${name}, Table ${e.table_id})
+          <button onclick="approveTile('${e.tile}')">Approve ALL</button>
+        </div>
+      `;
+    }).join("");
+
+  renderWinners();
+}
+
+// ===== GLOBAL APPROVE =====
+window.approveTile = async function(tile){
+  await db
+    .from("bingo_events")
+    .update({ approved: true })
+    .eq("tile", tile);
+
+  load();
+}
+
+// ===== WINNERS =====
+function renderWinners(){
+  document.getElementById("winners").innerHTML =
+    winners.map((w,i)=>`<div>#${i+1}: ${w}</div>`).join("");
+}
+
+window.setWinner = function(name){
+  if(winners.length >= 3) return;
+  winners.push(name);
+  renderWinners();
+}
+
+// ===== REALTIME =====
+db.channel('live')
+  .on('postgres_changes',
+    { event: '*', schema: 'public', table: 'bingo_events' },
+    load
+  )
+  .subscribe();
+
+// initial load
+load();
+
+</script>
+
+</body>
+</html><!DOCTYPE html>
 <html>
 <head>
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
